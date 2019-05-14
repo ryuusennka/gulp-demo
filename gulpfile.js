@@ -8,6 +8,7 @@ const ejs = require('gulp-ejs');
 const fileinclude = require('gulp-file-include');
 const rename = require('gulp-rename');
 const htmlmin = require('gulp-htmlmin');
+const browserSync = require('browser-sync').create();
 // const del = require('del');
 // const config = require('./gulp.config');
 
@@ -55,11 +56,28 @@ function html() {
     .pipe(dest('./dist'));
 }
 
-function watcher() {
-  watch('src/assets/css/**/*.scss', scss);
-  watch('src/assets/js/**/*.js', babeljs);
-  watch('src/assets/libs/**/*', copyLibs);
-  watch('src/**/*.ejs', html);
+function browserSyncServer(done) {
+  browserSync.init({
+    server: {
+      baseDir: path.join(__dirname, 'dist'),
+    },
+  });
+  done();
 }
 
-exports.default = series(parallel(scss, babeljs, html, copyLibs), watcher);
+function reload(done) {
+  browserSync.reload();
+  done();
+}
+
+function watcher() {
+  watch('src/assets/css/**/*.scss', series(scss, reload));
+  watch('src/assets/js/**/*.js', series(babeljs, reload));
+  watch('src/assets/libs/**/*', series(copyLibs, reload));
+  watch('src/**/*.ejs', series(html, reload));
+}
+
+exports.default = series(
+  parallel(scss, babeljs, html, copyLibs, browserSyncServer),
+  watcher
+);
